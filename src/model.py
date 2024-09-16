@@ -34,18 +34,5 @@ class User(Base):
         primary_key=True, default=uuid.uuid4
     )
     email: Mapped[str] = mapped_column(unique=True, index=True)
+    first_name: Mapped[str]
     hashed_password: Mapped[str] = mapped_column()
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user")
-
-
-class RefreshToken(Base):
-    __tablename__ = "refresh_token"
-    
-    id: Mapped[int] = mapped_column(
-        BigInteger,
-        primary_key=True, default=uuid.uuid4
-    )
-    refresh_token: Mapped[str] = mapped_column(unique=True, index=True)
-    used
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user_account.user_id"))
-    user: Mapped["User"] = relationship(back_populates="refresh_tokens")
