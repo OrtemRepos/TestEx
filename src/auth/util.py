@@ -6,7 +6,7 @@ from src.auth.schema import JWTToken, JWTTokenPayload
 from src.auth.config import config
 
 
-def create_jwt_token(user_id: str, expire_second: int = 3600) -> JWTToken:
+def create_jwt_token(user_id: str, expire_second: int = config.token_life_time) -> JWTToken:
     iss = "auth"
     iat = int(time.time())
     exp = iat + expire_second
@@ -28,6 +28,9 @@ def verify_jwt_token(token: str) -> JWTTokenPayload:
             options={"verify_signature": True},
             issuer="auth",
         )
+        username: str = raw_payload.get("sub")
+        if username is None:
+            raise jwt.InvalidTokenError("No 'sub' field in token")
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
 
