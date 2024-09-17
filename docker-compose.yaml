@@ -1,0 +1,99 @@
+version: '3'
+
+services:
+
+  dbpostgres:
+    image: postgres:16
+    networks:
+      - note
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresdata_note:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: >
+      postgres -c max_connections=1000
+               -c shared_buffers=256MB
+               -c effective_cache_size=768MB
+               -c maintenance_work_mem=64MB
+               -c checkpoint_completion_target=0.7
+               -c wal_buffers=16MB
+               -c default_statistics_target=100
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+
+
+  redis:
+      image: "redis/redis-stack:7.4.0-v0"
+      networks:
+        - note
+      env_file:
+        - ".env"
+      ports:
+        - "8001:8001"
+        - "6379:6379"
+      volumes:
+        - redisdata_note:/data
+      deploy:
+        resources:
+          limits:
+            cpus: '0.50'
+            memory: 512M
+          reservations:
+            cpus: '0.25'
+            memory: 256M
+
+      healthcheck:
+        test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+        interval: 1s
+        timeout: 3s
+        retries: 5
+      restart: unless-stopped
+      tty: true
+      stdin_open: true
+
+
+  rabbitmq:
+    image: rabbitmq:4.0.0-rc.1-management-alpine
+    hostname: rabbitmq
+    networks:
+      - note
+    restart: always
+    configs:
+      - source: rabit_config
+        target: /etc/rabbitmq/rabbitmq.conf
+    volumes:
+      - rabbitdata_note:/var/lib/rabbitmq
+    ports:
+      - 15672:15672
+      - 5672:5672
+
+
+volumes:
+  rabbitdata_note:
+  redisdata_note:
+  postgresdata_note:
+
+configs:
+  rabit_config:
+    file: ./config_container/rabitmq.conf
+
+
+networks:
+  note:
+    driver: bridge

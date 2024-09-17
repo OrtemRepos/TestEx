@@ -1,16 +1,21 @@
 import time
-from fastapi import HTTPException
-import passlib  # type: ignore
+from uuid import UUID
+
+import bcrypt
 import jwt
-from src.auth.schema import JWTToken, JWTTokenPayload
+from fastapi import HTTPException
+
 from src.auth.config import config
+from src.auth.schema import JWTToken, JWTTokenPayload
 
 
-def create_jwt_token(user_id: str, expire_second: int = config.token_life_time) -> JWTToken:
+def create_jwt_token(
+    user_id: UUID, expire_second: int = config.token_life_time
+) -> JWTToken:
     iss = "auth"
     iat = int(time.time())
     exp = iat + expire_second
-    payload = JWTTokenPayload(iss=iss, sub=user_id, exp=exp, iat=iat)
+    payload = JWTTokenPayload(iss=iss, sub=str(user_id), exp=exp, iat=iat)
 
     access_token = jwt.encode(
         payload.model_dump(), config.JWT_SECRET, algorithm="HS256"
@@ -32,19 +37,21 @@ def verify_jwt_token(token: str) -> JWTTokenPayload:
         if username is None:
             raise jwt.InvalidTokenError("No 'sub' field in token")
     except jwt.InvalidTokenError as exc:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
+        raise HTTPException(
+            status_code=401, detail=f"Invalid token: {exc}"
+        ) from exc
 
     return JWTTokenPayload(**raw_payload)
 
 
-pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password.encode("utf-8"))
+    return bcrypt.hashpw(
+        password.encode(),
+        bcrypt.gensalt(),
+    ).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(
+    return bcrypt.checkpw(
         plain_password.encode("utf-8"), hashed_password.encode("utf-8")
     )
