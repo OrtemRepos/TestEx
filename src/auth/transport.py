@@ -20,10 +20,11 @@ class RedisTransport:
         agent: str,
         token: str,
         expire_time: int = auth_config.refresh_token_life_time,
+        iss: str | None = None,
     ):
         async with self.redis.client() as conn:
-            await conn.set(f"{agent}_{user_id}", token, expire_time)
-            print(f"set {user_id} {token} {expire_time}")
+            name = f"{iss}_{agent}_{user_id}" if iss else f"{agent}_{user_id}"
+            await conn.set(name, token, expire_time)
 
     async def delete(self, user_id: str) -> None:
         async with self.redis.client() as conn:

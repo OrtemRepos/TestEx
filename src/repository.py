@@ -21,7 +21,7 @@ class AbstractRepository(ABC):
 
     @staticmethod
     @abstractmethod
-    async def add(user: UserCreate, session: AsyncSession) -> UUID:
+    async def add(user: UserCreate, session: AsyncSession) -> UserRead:
         raise NotImplementedError
 
     @staticmethod
@@ -33,7 +33,7 @@ class AbstractRepository(ABC):
 class UserRepository(AbstractRepository):
     @staticmethod
     async def get(user_id: UUID, session: AsyncSession) -> User | None:
-        stmt = select(User).where(User.user_id == user_id)
+        stmt = select(User).where(User.id == user_id)
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
         UserRead.model_validate(user, from_attributes=True)
@@ -50,7 +50,7 @@ class UserRepository(AbstractRepository):
         return user
 
     @staticmethod
-    async def add(user: UserCreate, session: AsyncSession) -> UUID:
+    async def add(user: UserCreate, session: AsyncSession) -> UserRead:
         user_model = User(
             email=user.email,
             password=user.password,
@@ -58,7 +58,7 @@ class UserRepository(AbstractRepository):
         )
         session.add(user_model)
         await session.flush()
-        return user_model.user_id
+        return UserRead.model_validate(user_model, from_attributes=True)
 
     @staticmethod
     async def list(session: AsyncSession) -> list[User]:

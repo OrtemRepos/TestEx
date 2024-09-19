@@ -1,4 +1,3 @@
-import time
 from pydantic import BaseModel
 
 
@@ -7,9 +6,8 @@ class JWTTokenPayload(BaseModel):
     sub: str
     exp: int
     iat: int
-    aud: str = "authserver"
     ag: str
-    ks: bytes
+    ks: str
 
 
 class JWTToken(BaseModel):

@@ -15,10 +15,11 @@ _f = Fernet(config.CRYPT_KEY)
 def create_jwt_token(
     user_id: UUID,
     agent: str,
-    key: bytes,
+    key: str,
     expire_second: int = config.token_life_time,
+    iss: str = "authserver",
 ) -> JWTToken:
-    iss = "authserver"
+    iss = iss
     iat = int(time.time())
     exp = iat + expire_second
     payload = JWTTokenPayload(
@@ -32,34 +33,36 @@ def create_jwt_token(
     return JWTToken(payload=payload, access_token=access_token)
 
 
-def verify_jwt_token(token: str, agent: str) -> JWTTokenPayload:
+def verify_jwt_token(
+    token: str, agent: str, iss: str = "authserver"
+) -> JWTTokenPayload:
     try:
         raw_payload = jwt.decode(
             token,
             config.JWT_SECRET,
             algorithms=["HS256"],
             options={"verify_signature": True},
-            issuer="auth",
+            issuer=iss,
         )
-        print(f"\n\nagent: {agent}\n\n{raw_payload}\n\n\n")
         username: str = raw_payload.get("sub")
         if (
             username is None
             or raw_payload.get("ks") is None
-            or raw_payload.get("ag") != agent
+            or raw_payload.get("ag") is None
+            or raw_payload.get("iat") is None
+            or raw_payload.get("exp") is None
         ):
-            raise jwt.InvalidTokenError("No 'sub' field in token")
+            raise jwt.InvalidTokenError("Invalid token")
 
         if (
-            raw_payload.get("exp") is not None
-            and raw_payload.get("exp") < int(time.time())
-            or raw_payload.get("iat") is not None
+            raw_payload.get("exp") < int(time.time())
+            or raw_payload.get("ag") != agent
         ):
-            raise jwt.InvalidTokenError("Token expired")
-        
+            raise jwt.InvalidTokenError("Token expired or invalid agent")
+
     except jwt.InvalidTokenError as exc:
         raise HTTPException(
-            status_code=401, detail=f"Invalid token: {exc}"
+            status_code=401, detail=f"Invalid token:\n\t {exc}"
         ) from exc
 
     return JWTTokenPayload(**raw_payload)
@@ -78,9 +81,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     )
 
 
-def encrypt_token(token: str) -> bytes:
-    return _f.encrypt(token.encode("utf-8"))
+def encrypt_token(token: str) -> str:
+    return _f.encrypt(token.encode("utf-8")).decode("utf-8")
 
 
-def decrypt_token(token: bytes) -> str:
-    return _f.decrypt(token).decode("utf-8")
+def decrypt_token(token: str) -> str:
+    return _f.decrypt(token.encode("utf-8")).decode("utf-8")

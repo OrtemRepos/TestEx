@@ -1,7 +1,9 @@
+from abc import ABC
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserCreate(BaseModel):
@@ -10,18 +12,28 @@ class UserCreate(BaseModel):
     password: str
 
 
-class UserRead(BaseModel):
-    user_id: UUID
-    email: EmailStr
-    first_name: str
-    created_at: datetime
+class Identifiable(BaseModel, ABC):
+    id: UUID
+    create_at: datetime = datetime.utcnow()
     update_at: datetime | None = None
 
 
-class UserUpdate(BaseModel):
+class UserRead(Identifiable):
+    email: EmailStr
+    first_name: str
+
+
+class UserUpdate(Identifiable):
     first_name: str | None = None
     last_name: str | None = None
     email: EmailStr | None = None
     password: str
-    created_at: datetime
-    update_at: datetime
+
+
+class BaseResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    status: Literal["success", "fail"] = "success"
+
+
+class HTTPResponse(BaseResponse):
+    detail: list | None = None

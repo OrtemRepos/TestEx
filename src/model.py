@@ -15,7 +15,6 @@ class Base(DeclarativeBase):
     )
     update_at: Mapped[datetime] = mapped_column(
         type_=TIMESTAMP(timezone=True),
-        server_default=text("TIMEZONE('utc', now())"),
         onupdate=text("TIMEZONE('utc', now())"),
         nullable=True,
     )
@@ -32,9 +31,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "user_account"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(unique=True, index=True)
     first_name: Mapped[str]
     password: Mapped[str]
