@@ -83,6 +83,18 @@ services:
       - 15672:15672
       - 5672:5672
 
+  auth_server:
+    build: .
+    networks:
+      - note
+    env_file:
+      - .env
+    depends_on:
+      - dbpostgres
+      - redis
+      - rabbitmq
+    ports:
+      - 8000:8000
 
 volumes:
   rabbitdata_note:
