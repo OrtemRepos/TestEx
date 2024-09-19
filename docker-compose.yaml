@@ -89,12 +89,29 @@ services:
       - note
     env_file:
       - .env
+      - ./src/auth/.env
     depends_on:
       - dbpostgres
       - redis
       - rabbitmq
     ports:
       - 8000:8000
+
+  celery_worker:
+    build: .
+    command: uv run celery -A src.email_celery.router  worker --loglevel=INFO
+    networks:
+      - note
+    env_file:
+      - .env
+      - ./src/email_celery/.celery.env
+      - ./src/email_celery/.email.env
+    depends_on:
+      - dbpostgres
+      - redis
+      - rabbitmq
+    ports:
+      - 8002:8002
 
 volumes:
   rabbitdata_note:
@@ -108,4 +125,5 @@ configs:
 
 networks:
   note:
+    name: note
     driver: bridge
