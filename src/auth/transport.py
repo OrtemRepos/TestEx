@@ -2,7 +2,6 @@ import secrets
 
 from redis.asyncio.client import Redis
 
-from src.auth.config import config as auth_config
 from src.config import config
 
 
@@ -19,7 +18,7 @@ class RedisTransport:
         user_id: str,
         agent: str,
         token: str,
-        expire_time: int = auth_config.refresh_token_life_time,
+        expire_time: int = config.refresh_token_life_time,
         iss: str | None = None,
     ):
         async with self.redis.client() as conn:
@@ -33,7 +32,7 @@ class RedisTransport:
     async def refresh(
         self,
         user_id: str,
-        expire_time: int = auth_config.refresh_token_life_time,
+        expire_time: int = config.refresh_token_life_time,
     ) -> str | None:
         async with self.redis.client() as conn:
             token = await conn.get(user_id)

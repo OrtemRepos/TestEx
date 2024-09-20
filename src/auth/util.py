@@ -6,8 +6,8 @@ import jwt
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 
-from src.auth.config import config
 from src.auth.schema.token import JWTToken, JWTTokenPayload
+from src.config import config
 
 _f = Fernet(config.CRYPT_KEY)
 

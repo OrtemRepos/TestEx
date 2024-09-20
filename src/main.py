@@ -6,6 +6,7 @@ from src.auth.router import auth_router
 
 app = FastAPI()
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -4,6 +4,7 @@ services:
 
   dbpostgres:
     image: postgres:16
+    container_name: ex_db
     networks:
       - note
     env_file:
@@ -40,13 +41,11 @@ services:
 
   redis:
       image: "redis/redis-stack:7.4.0-v0"
+      container_name: ex_redis
       networks:
         - note
       env_file:
-        - ".env"
-      ports:
-        - "8001:8001"
-        - "6379:6379"
+        - .env
       volumes:
         - redisdata_note:/data
       deploy:
@@ -70,6 +69,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:4.0.0-rc.1-management-alpine
+    container_name: ex_rabbit
     hostname: rabbitmq
     networks:
       - note
@@ -79,37 +79,57 @@ services:
         target: /etc/rabbitmq/rabbitmq.conf
     volumes:
       - rabbitdata_note:/var/lib/rabbitmq
-    ports:
-      - 15672:15672
-      - 5672:5672
 
   auth_server:
     build: .
+    container_name: ex_auth
     networks:
       - note
     env_file:
       - .env
-      - ./src/auth/.env
+      - .celery.env
+      - .email.env
+      - .secret.env
     depends_on:
-      - dbpostgres
-      - redis
-      - rabbitmq
+      - ex_db
+      - ex_redis
+      - ex_rabbit
     ports:
       - 8000:8000
 
   celery_worker:
     build: .
-    command: uv run celery -A src.email_celery.router  worker --loglevel=INFO
+    container_name: ex_celery
+    entrypoint: uv run celery -A src.email_celery.router worker --loglevel=INFO
     networks:
       - note
     env_file:
       - .env
-      - ./src/email_celery/.celery.env
-      - ./src/email_celery/.email.env
+      - .celery.env
+      - .email.env
+      - .secret.env
     depends_on:
-      - dbpostgres
-      - redis
-      - rabbitmq
+      - ex_auth
+      - ex_db
+      - ex_redis
+      - ex_rabbit
+
+  flower:
+    build: .
+    container_name: ex_flower
+    entrypoint: uv run celery -A src.email_celery.router flower --port=8002
+    networks:
+      - note
+    env_file:
+      - .env
+      - .celery.env
+      - .email.env
+      - .secret.env
+    depends_on:
+      - ex_auth
+      - ex_db
+      - ex_redis
+      - ex_rabbit
     ports:
       - 8002:8002
 

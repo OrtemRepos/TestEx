@@ -11,6 +11,7 @@ dependencies = [
     "cryptography>=43.0.1",
     "email-validator>=2.2.0",
     "fastapi>=0.114.2",
+    "flower>=2.0.1",
     "passlib>=1.7.4",
     "pydantic>=2.9.1",
     "pyjwt>=2.9.0",

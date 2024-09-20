@@ -2,13 +2,12 @@ import smtplib
 
 from celery import Celery  # type: ignore
 
-from src.email_celery.celery_config import config as celery_config
-from src.email_celery.config import config
+from src.config import config
 from src.email_celery.constant import html_forgot_password_msg, html_verify_msg
 from src.email_celery.util import generate_email
 
-async_queue = Celery("router")
-async_queue.config_from_object(celery_config)
+async_queue = Celery("router", broker=config.RABBITMQ_URL, backend=config.REDIS_URL)
+async_queue.config_from_object(config)
 
 
 @async_queue.task

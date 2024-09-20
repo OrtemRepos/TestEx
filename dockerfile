@@ -20,5 +20,4 @@ RUN uv sync
 
 EXPOSE 8000
 
-ENTRYPOINT ["uv", "run", "src/main.py"]
-
+ENTRYPOINT uv run ./src/main.py

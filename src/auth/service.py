@@ -7,7 +7,6 @@ from fastapi import HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.config import config
 from src.auth.schema.response import AccessTokenResponse
 from src.auth.schema.token import JWTTokenPayload
 from src.auth.transport import RedisTransport
@@ -19,6 +18,7 @@ from src.auth.util import (
     verify_jwt_token,
     verify_password,
 )
+from src.config import config
 from src.email_celery.constant import html_forgot_password_msg, html_verify_msg
 from src.email_celery.router import (
     send_forgot_password_email_task,
