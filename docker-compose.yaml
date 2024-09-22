@@ -90,6 +90,7 @@ services:
       - .celery.env
       - .email.env
       - .secret.env
+      - .logging.env
     depends_on:
       - ex_db
       - ex_redis

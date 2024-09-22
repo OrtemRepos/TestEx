@@ -8,13 +8,13 @@ path_env = [
     ".secret.env",
     ".email.env",
     ".celery.env",
+    ".logging.env",
 ]
 
 
 def load_env():
     for path in path_env:
         if Path.exists(Path(path)):
-            print(f"load {path}")
             print(load_dotenv(Path(path)))
 
 
@@ -46,12 +46,11 @@ class Config:
         self.refresh_token_life_time = int(
             os.environ.get("REFRESH_TOKEN_LIFE")
         )
-        
-        self.SMTP_PASSWORD=os.environ.get("SMTP_PASSWORD")
-        self.SMTP_HOST=os.environ.get("SMTP_HOST")
-        self.SMTP_PORT=os.environ.get("SMTP_PORT")
-        self.SMTP_USER=os.environ.get("SMTP_USER")
 
+        self.SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+        self.SMTP_HOST = os.environ.get("SMTP_HOST")
+        self.SMTP_PORT = os.environ.get("SMTP_PORT")
+        self.SMTP_USER = os.environ.get("SMTP_USER")
 
 
 load_env()

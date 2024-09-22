@@ -6,7 +6,9 @@ from src.config import config
 from src.email_celery.constant import html_forgot_password_msg, html_verify_msg
 from src.email_celery.util import generate_email
 
-async_queue = Celery("router", broker=config.RABBITMQ_URL, backend=config.REDIS_URL)
+async_queue = Celery(
+    "router", broker=config.RABBITMQ_URL, backend=config.REDIS_URL
+)
 async_queue.config_from_object(config)
 
 

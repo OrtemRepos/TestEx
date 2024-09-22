@@ -15,6 +15,7 @@ ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 COPY pyproject.toml /app
 
 COPY .env /app
+COPY .logging.env /app
 
 RUN uv sync
 

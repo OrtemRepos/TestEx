@@ -25,6 +25,7 @@ from src.email_celery.router import (
     send_verification_email_task,
 )
 from src.email_celery.util import generate_email
+from src.logging_config import logger
 from src.repository import AbstractRepository
 from src.schema import HTTPResponse, UserCreate, UserRead
 
@@ -46,10 +47,12 @@ class UserManager:
         refresh_token = await self.transpot.get(token.sub, token.ag)
         refresh_token_decrypt = decrypt_token(refresh_token_cryt)
         if refresh_token != refresh_token_decrypt:
+            logger.exception("Refresh token mismatch")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token",
             )
+        logger.info("Refresh token verified")
         return HTTPResponse(status="success")
 
     async def create_user(
@@ -58,6 +61,8 @@ class UserManager:
         user_check = await self.db.get_by_email(user.email, session)
         print(user_check)
         if user_check is not None:
+            logger.exception("Email already registered", email=user.email)
+            
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Email {user.email=} already registered",
@@ -67,6 +72,7 @@ class UserManager:
         user_read = await self.db.add(user, session)
         await session.commit()
         self.after_register(request, user=user_read)
+        logger.info("User created", user=user_read)
         return HTTPResponse(status="success", detail=[user_read])
 
     async def accses_token(
@@ -79,6 +85,10 @@ class UserManager:
         if user is None or not verify_password(
             form_data.password, user.password
         ):
+            logger.exception(
+                "Incorrect email or password", email=form_data.username
+            )
+            
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Incorrect email or password",
@@ -98,6 +108,9 @@ class UserManager:
         self.after_login(
             request, UserRead.model_validate(user, from_attributes=True)
         )
+
+        logger.info("User logged in", user_id=user.id, user_email=user.email)
+
         return AccessTokenResponse(
             access_token=token.access_token,
             expires_at=token.payload.exp,
@@ -141,6 +154,7 @@ class UserManager:
             access_token = create_jwt_token(UUID(id), payload.ag, crypt_key)
 
         except jwt.InvalidTokenError as e:
+            logger.exception("Invalid token")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
@@ -165,6 +179,7 @@ class UserManager:
     async def logout(self, user: UserRead, request: Request) -> HTTPResponse:
         await self.transpot.delete(str(user.id))
         self.after_logout(request, user)
+        logger.info("User logged out", user_id=user.id, user_email=user.email)
         return HTTPResponse(status="success")
 
     async def forgot_password_token(
@@ -178,6 +193,11 @@ class UserManager:
             token=secrets_code,
             expire_time=300,
             iss="forgot",
+        )
+        logger.info(
+            "User request reset password",
+            user_id=user.id,
+            user_email=user.email,
         )
         self.after_forgot_password(request, user, secrets_code)
         return HTTPResponse(status="success")
@@ -193,6 +213,9 @@ class UserManager:
             token=secrets_code,
             expire_time=300,
             iss="verify",
+        )
+        logger.info(
+            "User request verification", user_id=user.id, user_email=user.email
         )
         self.after_request_verification(request, user, secrets_code)
         return HTTPResponse(status="success")
@@ -220,6 +243,11 @@ class UserManager:
             html_msg=html_forgot_password_msg,
             subject_msg="Forgot Password",
         )
+        logger.info(
+            "Send task in Celery",
+            task="send_forgot_password_email_task",
+            user_email=user.email,
+        )
         send_forgot_password_email_task.delay(user.email, msg.as_string())
 
     def after_change_password(self, request: Request, user: UserRead) -> None:
@@ -236,6 +264,11 @@ class UserManager:
             token=token,
             html_msg=html_verify_msg,
             subject_msg="Verification",
+        )
+        logger.info(
+            "Send task in Celery",
+            task="send_verification_email_task",
+            user_email=user.email,
         )
         send_verification_email_task.delay(user.email, msg.as_string())
 
